@@ -16,13 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="AstrumLoom\**" />
-    <EmbeddedResource Remove="AstrumLoom\**" />
-    <None Remove="AstrumLoom\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="AstrumLoom\Core\AstrumLoom.csproj" />
+    <ProjectReference Include="..\AstrumLoom\Core\AstrumLoom.csproj" />
   </ItemGroup>
 
 </Project>
