@@ -16,7 +16,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Draw\Rader.cs" />
+    <Compile Remove="AstrumLoom\**" />
+    <EmbeddedResource Remove="AstrumLoom\**" />
+    <None Remove="AstrumLoom\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="AstrumLoom\Core\AstrumLoom.csproj" />
   </ItemGroup>
 
 </Project>

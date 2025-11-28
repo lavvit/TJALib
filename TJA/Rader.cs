@@ -1,4 +1,6 @@
-﻿using static System.Math;
+﻿using AstrumLoom;
+
+using static System.Math;
 
 namespace TJALib.TJA;
 
@@ -893,9 +895,9 @@ double maxTrim = 0.0   // 上位n%を削る
             double add = 0;
             if (range % 4.0 < 0.1)//4分や8分
                 add = 0.1;
-            if (range % 2.0 < 0.1)//6分や8分
-                add = 1;
-            else add = range % 1.2 < 0.01
+            add = range % 2.0 < 0.1
+                ? 1
+                : range % 1.2 < 0.01
                 ? 50
                 : range % 1.25 < 0.01
                 ? 40

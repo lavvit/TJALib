@@ -1,4 +1,6 @@
-﻿using static System.Math;
+﻿using AstrumLoom;
+
+using static System.Math;
 
 using TJARader = TJALib.TJA.Rader;
 
@@ -8,7 +10,6 @@ public static class NoteRader
 {
     public static void DrawBase(double x, double y, int size = 80, double max = 100)
     {
-
         double rX = size * Cos(PI / 6) * 2, rY = size * Sin(PI / 6) * 2;
         (double x, double y)[] hx =
             [
