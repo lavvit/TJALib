@@ -578,10 +578,15 @@ public class Genre
                 "SLUDGE MAXX",
                 "DJ ARTHUR",
                 ];
+            string[] ignore = [
+                "Jun Kuroda",
+                ];
             foreach (string artist in artists)
             {
                 if (subtitle.Contains(artist, StringComparison.OrdinalIgnoreCase))
                 {
+                    if (ignore.Any(i => subtitle.Contains(i, StringComparison.OrdinalIgnoreCase)))
+                        continue;
                     genres.Add(EGenre.SpiCatsArtist);
                     break;
                 }
