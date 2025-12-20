@@ -290,7 +290,22 @@ public class Header
             Preview = file;
         }
 
-        //Length = AstrumLoom.DXLib.Sound.GetLength(WavePath);
+        Length = GetLength(WavePath);
+    }
+    private static double GetLength(string wave)
+    {
+        if (string.IsNullOrEmpty(wave) || !File.Exists(wave))
+            return 0;
+        try
+        {
+            using var f = TagLib.File.Create(wave);  // FileShare.Readで開かれる
+            return Math.Round(f.Properties.Duration.TotalMilliseconds, 2);            // ← これで終了
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"サウンドの長さ取得に失敗しました: {wave}\n{e}");
+            return 0;
+        }
     }
 
     public string WavePath
