@@ -36,7 +36,7 @@ public class Course
     }
     public (bool On, double Time)[] GetGogoSnapshot()
     {
-        lock (_gogoLock) { return _gogoList.ToArray(); }
+        lock (_gogoLock) { return [.. _gogoList]; }
     }
 
     public Course() { }
@@ -248,7 +248,6 @@ public class Course
     public override string ToString() => $"{Header.Title} {ToShortString()}";
     public string ToShortString() => $"{(ECourse)Difficulty} Lv.{Header.Level} {Notes}Notes{(Header.Designer != "" ? $" by.{Header.Designer}" : "")}";
 
-
     public void Read()
     {
         // Lanes を再構築するのでキャッシュをクリアしておく
@@ -321,7 +320,6 @@ public class Course
                                     }
                                 }
                             }
-
                         }
                         if (note is >= 'A' and <= 'E')
                         {
@@ -362,7 +360,6 @@ public class Course
                                     LongList[l].Add((b, n));
                                 }
                             }
-
                         }
                         if (note == ',')
                         {
@@ -507,6 +504,8 @@ public class Course
         return 0;
     }
 
+    private static double Round(double dval) => Math.Round(dval, 5, MidpointRounding.AwayFromZero);
+    private static double RecalcR(double val) => Recalc(val > 0.001 ? Round(val) : val);
     private static double Recalc(double val) => Rational.FromDouble(val, 10000, 0.0001).Value;
     public void Set()
     {
@@ -530,6 +529,7 @@ public class Course
             double beat = 0;
             double bpm = Header.BPM == 0 ? 120 : Header.BPM;
             double scroll = 1;
+            double iscroll = 0;
             double measure = 1;
             double measuremom = 1;
             bool barline = true;
@@ -550,6 +550,7 @@ public class Course
                 bar.BPM = bpm;
                 bar.Measure = measure;
                 bar.Scroll = scroll;
+                bar.ImidiateScroll = iscroll;
                 bar.Visible = barline;
                 bar.Branch = branchnum;
                 // 事前にプレフィックスを計算しておく
@@ -570,7 +571,40 @@ public class Course
                             switch (name)
                             {
                                 case "scroll":
-                                    scroll = Parse(value);
+                                    {
+                                        if (value.Contains(','))
+                                        {
+                                            string[] ch = value.Split(',');
+                                            double speed = 1.0;
+                                            double radian = 0;
+                                            double me = 0, va = 0;
+                                            if (ch.Length >= 1) double.TryParse(ch[0].Trim(), out speed);
+                                            if (ch.Length >= 2) double.TryParse(ch[1].Trim(), out me);
+                                            if (ch.Length >= 3) double.TryParse(ch[2].Trim(), out va);
+                                            if (me != 0.0) radian = 2 * va / me;
+                                            double xvol = Math.Cos(Math.PI * radian);
+                                            double yvol = Math.Sin(Math.PI * radian);
+                                            scroll = speed * xvol;
+                                            iscroll = speed * yvol;
+                                            //tmg
+                                        }
+                                        else if (value.Contains('i'))
+                                        {
+                                            char[] dl = ['+', '-'];
+                                            int s0size = value.IndexOfAny(dl, 1);
+                                            string scr0 = value[..s0size];
+                                            string scr1 = value[(s0size + 1)..];
+                                            string x = scr0.Trim();
+                                            string y = scr1.Replace("i", "").Trim();
+                                            double.TryParse(x, out scroll);
+                                            double.TryParse(y, out iscroll);
+                                        }
+                                        else
+                                        {
+                                            scroll = Parse(value);
+                                            iscroll = 0;
+                                        }
+                                    }
                                     break;
                                 case "bpmchange":
                                     double prev = bpm;
@@ -622,6 +656,7 @@ public class Course
                                         bar.Beat = brstart.Beat;
                                         bar.BPM = brstart.BPM;
                                         bar.Scroll = brstart.Scroll;
+                                        bar.ImidiateScroll = brstart.ImidiateScroll;
                                         bar.Measure = brstart.Measure;
                                         branch = null;
                                     }
@@ -638,7 +673,7 @@ public class Course
                                     {
                                         for (int b = 0; b < 3; b++)
                                         {
-                                            Bar branchbar = BranchList[l].Count > 0 ?
+                                            var branchbar = BranchList[l].Count > 0 ?
                                             BranchList[l][^1].StartBarStatus[b] : bar.Clone();
                                             branch.StartBarStatus[b] = branchbar;
                                         }
@@ -668,6 +703,7 @@ public class Course
                                             bar.BPM = bpm;
                                             bar.Measure = measure;
                                             bar.Scroll = scroll;
+                                            bar.ImidiateScroll = iscroll;
 
                                             bar.Branch = branchnum;
                                         }
@@ -700,6 +736,7 @@ public class Course
                                         bar.BPM = bpm;
                                         bar.Measure = measure;
                                         bar.Scroll = scroll;
+                                        bar.ImidiateScroll = iscroll;
                                     }
                                     break;
 
@@ -722,6 +759,7 @@ public class Course
                                 bar.BPM = bpm;
                                 bar.Measure = measure;
                                 bar.Scroll = scroll;
+                                bar.ImidiateScroll = iscroll;
                                 bar.Visible = barline;
                                 bar.ComputeChipTimePrefix(bpm, measure);
                             }
@@ -735,6 +773,7 @@ public class Course
                     chip.Bar = barnum;
                     chip.BPM = bpm;
                     chip.Scroll = scroll;
+                    chip.ImidiateScroll = iscroll;
                     chip.Branch = branchnum;
                     chip.Measure = bar.Measure;
                     if (chip.Type is ENote.Balloon or ENote.Potato)
@@ -775,8 +814,8 @@ public class Course
                     chip.Beat = bar.Beat + cibt;
 
                     double bt = (double)j / bar.Chips.Count;
-                    chip.BeatMeasure = Math.Round(bar.Number - 1 + bt, 5, MidpointRounding.AwayFromZero);
-                    chip.BeatPos = Math.Round(bt * (4 / bar.Measure), 5, MidpointRounding.AwayFromZero);
+                    chip.BeatMeasure = Round(bar.Number - 1 + bt);
+                    chip.BeatPos = Round(bt * (4 / bar.Measure));
 
                     double wid = 4 / bar.Measure / bar.Chips.Count;
                     beat += wid;
@@ -817,6 +856,7 @@ public class Course
                         chip.Beat = endchip.Beat;
                         chip.BPM = endchip.BPM;
                         chip.Scroll = endchip.Scroll;
+                        chip.ImidiateScroll = endchip.ImidiateScroll;
                     }
                 }
             }
@@ -825,19 +865,20 @@ public class Course
         var chips = AllChips.Where(c => c.Hittable).ToList();
         foreach (var chip in chips)
         {
-            chip.Time = chip.Time > 0.001 ? Math.Round(chip.Time, 5, MidpointRounding.AwayFromZero) : chip.Time;
-            chip.BPM = Recalc(chip.BPM > 0.001 ? Math.Round(chip.BPM, 5, MidpointRounding.AwayFromZero) : chip.BPM);
-            chip.Scroll = Recalc(chip.Scroll > 0.001 ? Math.Round(chip.Scroll, 5, MidpointRounding.AwayFromZero) : chip.Scroll);
-            chip.Beat = Math.Round(chip.Beat, 5, MidpointRounding.AwayFromZero);
-            chip.BeatMeasure = Recalc(Math.Round(chip.BeatMeasure, 5, MidpointRounding.AwayFromZero));
-            chip.BeatPos = Recalc(Math.Round(chip.BeatPos, 5, MidpointRounding.AwayFromZero));
+            chip.Time = Round(chip.Time);
+            chip.BPM = RecalcR(chip.BPM);
+            chip.Scroll = Recalc(chip.Scroll);
+            chip.ImidiateScroll = Recalc(chip.ImidiateScroll);
+            chip.Beat = Round(chip.Beat);
+            chip.BeatMeasure = Round(chip.BeatMeasure);
+            chip.BeatPos = RecalcR(chip.BeatPos);
         }
         int hand = 1;
         for (int i = 1; i < chips.Count; i++)
         {
             Chip L = chips[i - 1], R = chips[i];
             L.Next = R;
-            L.Length = Recalc(Math.Round(R.Time - L.Time, 5, MidpointRounding.AwayFromZero));
+            L.Length = RecalcR(R.Time - L.Time);
             R.RelativeTime = R.Time - chips[0].Time;
 
             if (L.Length <= 20)
@@ -913,7 +954,6 @@ public class Course
         Calculate();
     }
 
-
     public void CalcRoll()
     {
         double length = 0.0;
@@ -939,7 +979,7 @@ public class Course
         BalloonCount = ballcnt;
     }
 
-    public double GetTime(Bar bar, int current, bool nodelay = false, bool prefix = true)
+    public static double GetTime(Bar bar, int current, bool nodelay = false, bool prefix = true)
     {
         if (bar.BPM == 0 || bar.Measure == 0) return 0;
         if (bar.Chips.Count == 0)
@@ -963,7 +1003,7 @@ public class Course
         // フォールバック（元の逐次計算）
         return GetTime(bar, current);
     }
-    public double GetTime(Bar bar, int current)
+    public static double GetTime(Bar bar, int current)
     {
         if (current == 0) return 0;
         double t = 0;
@@ -1001,7 +1041,7 @@ public class Course
         return t;
     }
 
-    public double GetBeat(Bar bar, int current)
+    public static double GetBeat(Bar bar, int current)
     {
         if (current == 0) return 0;
         double beat = 0;
@@ -1041,7 +1081,6 @@ public class Course
         }
         return beat;
     }
-
 
     public static int GetGreenNumber(Chip chip, double plusminus = 0)
     {
@@ -1195,29 +1234,21 @@ public class Course
                         //break;
                     }
                     //ドコドン
-                    else if (time[DATA - 2] >= 2.4 && time[DATA - 1] == 1 && time[DATA + 1] == 1 && time[DATA + 2] >= 2.4 && sort[DATA - 1] == ENote.Don && sort[DATA + 1] == ENote.Don)
-                    {
-                        list[i].SE = 2;
-                    }
-                    //右の音符が2以上離れている
-                    else if (time[DATA + 1] > 2)
-                    {
-                        list[i].SE = 0;
-                    }
-                    //右の音符が1.4以上_左の音符が1.4以内
-                    else if (time[DATA + 1] >= 1.4 && time[DATA - 1] <= 1.4)
-                    {
-                        list[i].SE = 0;
-                    }
-                    //右の音符が2以上_右右の音符が3以内
-                    else if (time[DATA + 1] >= 2 && time[DATA + 2] <= 3)
-                    {
-                        list[i].SE = 0;
-                    }
-                    //右の音符が2以上_大音符
                     else
                     {
-                        list[i].SE = time[DATA + 1] >= 2 && (sort[DATA + 1] == ENote.DON || sort[DATA + 1] == ENote.KA) ? 0 : 1;
+                        list[i].SE = time[DATA - 2] >= 2.4 && time[DATA - 1] == 1 && time[DATA + 1] == 1 && time[DATA + 2] >= 2.4 && sort[DATA - 1] == ENote.Don && sort[DATA + 1] == ENote.Don
+                            ? 2
+                            //右の音符が2以上離れている
+                            : time[DATA + 1] > 2
+                            ? 0
+                            //右の音符が1.4以上_左の音符が1.4以内
+                            : time[DATA + 1] >= 1.4 && time[DATA - 1] <= 1.4
+                            ? 0
+                            //右の音符が2以上_右右の音符が3以内
+                            : time[DATA + 1] >= 2 && time[DATA + 2] <= 3
+                            ? 0
+                            //右の音符が2以上_大音符
+                            : time[DATA + 1] >= 2 && (sort[DATA + 1] == ENote.DON || sort[DATA + 1] == ENote.KA) ? 0 : 1;
                     }
                     break;
                 case ENote.Ka:
@@ -1235,25 +1266,16 @@ public class Course
                     }
 
                     //右の音符が2以上離れている
-                    if (time[DATA + 1] > 2)
-                    {
-                        list[i].SE = 3;
-                    }
-                    //右の音符が1.4以上_左の音符が1.4以内
-                    else if (time[DATA + 1] >= 1.4 && time[DATA - 1] <= 1.4)
-                    {
-                        list[i].SE = 3;
-                    }
-                    //右の音符が2以上_右右の音符が3以内
-                    else if (time[DATA + 1] >= 2 && time[DATA + 2] <= 3)
-                    {
-                        list[i].SE = 3;
-                    }
-                    //右の音符が2以上_大音符
-                    else
-                    {
-                        list[i].SE = time[DATA + 1] >= 2 && (sort[DATA + 1] == ENote.DON || sort[DATA + 1] == ENote.KA) ? 3 : 4;
-                    }
+                    list[i].SE = time[DATA + 1] > 2
+                        ? 3
+                        //右の音符が1.4以上_左の音符が1.4以内
+                        : time[DATA + 1] >= 1.4 && time[DATA - 1] <= 1.4
+                            ? 3
+                            //右の音符が2以上_右右の音符が3以内
+                            : time[DATA + 1] >= 2 && time[DATA + 2] <= 3
+                            ? 3
+                            //右の音符が2以上_大音符
+                            : time[DATA + 1] >= 2 && (sort[DATA + 1] == ENote.DON || sort[DATA + 1] == ENote.KA) ? 3 : 4;
                     break;
                 default:
                     doco_count = 0;
@@ -1269,7 +1291,6 @@ public class Course
         Header.ScoreInit = Init;
         Header.ScoreDiff = Diff;
     }
-
 
     public int Calculate(double init, double diff, double roll)
     {
@@ -1413,18 +1434,19 @@ public class Course
     public static int GetCourse(string str)
     {
         bool ret = int.TryParse(str, out int nCourse);
-        if (ret) return nCourse;
-        return str.ToLower() switch
-        {
-            "easy" => 0,
-            "normal" => 1,
-            "hard" => 2,
-            "oni" => 3,
-            "edit" => 4,
-            "tower" => 5,
-            "dan" => 6,
-            _ => 3,
-        };
+        return ret
+            ? nCourse
+            : str.ToLower() switch
+            {
+                "easy" => 0,
+                "normal" => 1,
+                "hard" => 2,
+                "oni" => 3,
+                "edit" => 4,
+                "tower" => 5,
+                "dan" => 6,
+                _ => 3,
+            };
     }
 
     public static string GetColor(ECourse course, bool enable = true)

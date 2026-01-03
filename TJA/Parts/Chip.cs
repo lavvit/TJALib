@@ -4,7 +4,10 @@ namespace TJALib.TJA;
 
 public class Chip : ChipBase
 {
+    // X方向のスクロール
     public double Scroll = 1;
+    // Y方向のスクロール
+    public double ImidiateScroll = 0;
     public ENote Type;
     public bool Gogo;
     public int SE = -1;
@@ -100,7 +103,8 @@ public class Chip : ChipBase
     }
 
     public override string ToString() => $"{(Branch > 0 ? $"{(EBranchLane)Branch - 1}" : "")}" +
-            $"{Type,4} pos:{BeatPos,5:0.0##} {Separate:0.###}x {(int)Length}ms {(int)RelativeTime} bpm:{BPM:0.#} hs:{Scroll:0.##} ";
+            $"{Type,4} pos:{BeatPos,5:0.0##} {Separate:0.###}x {(int)Length}ms {(int)RelativeTime} " +
+        $"bpm:{BPM:0.#} hs:{Scroll:0.##}{(ImidiateScroll != 0 ? $"+{ImidiateScroll:0.##}i" : "")} ";
 
     public double Separate => GetSeparate(Length);
 
@@ -149,7 +153,6 @@ public class Chip : ChipBase
             double cmp = Math.Log10(Composite);
             weight *= 1.0 + cmp / weight;
 
-
             //weight = Math.Log2(1 + Composite) / Math.Log2(2 + Composite) * weight * 2.0;
 
             return weight;
@@ -176,7 +179,6 @@ public class Chip : ChipBase
     public bool Syncopate =>
             // このノーツと次のノーツの間に長さ分の空白があるか
 
-
             false;
 
     public Chip[] ConnectedChips
@@ -194,11 +196,7 @@ public class Chip : ChipBase
             return [.. list];
         }
     }
-    public bool Equal(Chip? chip)
-    {
-        if (chip == null) return false;
-        return this == chip || Math.Abs(Time - chip.Time) < 0.001 && Type == chip.Type && Bar == chip.Bar && Position == chip.Position;
-    }
+    public bool Equal(Chip? chip) => chip != null && (this == chip || Math.Abs(Time - chip.Time) < 0.001 && Type == chip.Type && Bar == chip.Bar && Position == chip.Position);
 }
 
 public enum ENote

@@ -5,7 +5,10 @@ namespace TJALib.TJA;
 public class Bar : BarBase
 {
     public int NoteCount = 1;
+    // X方向のスクロール
     public double Scroll = 1;
+    // Y方向のスクロール
+    public double ImidiateScroll = 0;
     public int Branch = 0;
     public double Length = 0;
     public double BeatLen = 0;
@@ -40,7 +43,6 @@ public class Bar : BarBase
             .Where(c => c.Type is > ENote.None and < ENote.Roll)
             .OrderBy(c => c.Time)
             ];
-
 
     // 既存の Bar クラス内に追加
     // Cached prefix times for chips (length == Chips.Count + 1)
@@ -131,8 +133,8 @@ public class Bar : BarBase
             bool bpmchange = Chips.Any(c => c.BPM != BPM);
             // 現在の拍子より正確であれば置き換え
             double aqualmeasure = 4.0 / Measure; // 何拍扱いか
-            Rational nr = Rational.FromDouble(aqualmeasure, 100, 0.0001);
-            Rational r = Rational.FromDouble(measurefromlen, 100, 0.0001);
+            var nr = Rational.FromDouble(aqualmeasure, 100, 0.0001);
+            var r = Rational.FromDouble(measurefromlen, 100, 0.0001);
             if (nr.Num > 5 && r.Den + nr.Den > 2 && bpmchange)
             {
                 if (r.Den < nr.Den || r.Value < nr.Value)
