@@ -866,7 +866,9 @@ public class Course
         foreach (var chip in chips)
         {
             chip.Time = Round(chip.Time);
-            chip.BPM = RecalcR(chip.BPM);
+            double lim = Math.Min(10000 / chip.Measure, 100000);
+            chip.BPM = RecalcR(Math.Abs(chip.BPM) < lim ? chip.BPM :
+                Math.Sign(chip.BPM) * Math.Min(Math.Abs(chip.BPM), lim));
             chip.Scroll = Recalc(chip.Scroll);
             chip.ImidiateScroll = Recalc(chip.ImidiateScroll);
             chip.Beat = Round(chip.Beat);

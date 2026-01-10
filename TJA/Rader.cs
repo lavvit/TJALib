@@ -797,10 +797,20 @@ double maxTrim = 0.0   // 上位n%を削る
         int num = checked(240 * f.Num);
         int den = checked(f.Den);
         int N = checked(num * rBpm.Den);
-        N = checked(N * rn.Den);
         int D = checked(den * rBpm.Num);
-        D = checked(D * rn.Num);
-        return new Rational(N, D);
+        long lN = checked((long)N * rn.Den);
+        long lD = checked((long)D * rn.Num);
+        try
+        {
+            N = checked((int)lN);
+            D = checked((int)lD);
+            return new Rational(N, D);
+        }
+        catch (Exception ex)
+        {
+            AstrumLoom.Log.Write("DurationR計算エラー : " + ex);
+            return new Rational(0, 1);
+        }
     }
     #endregion
     #region Func
