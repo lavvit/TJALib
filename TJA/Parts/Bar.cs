@@ -9,6 +9,8 @@ public class Bar : BarBase
     public double Scroll = 1;
     // Y•ûŒü‚ÌƒXƒNƒ[ƒ‹
     public double ImidiateScroll = 0;
+    public double Speed => Math.Sqrt(Scroll * Scroll + ImidiateScroll * ImidiateScroll);
+
     public int Branch = 0;
     public double Length = 0;
     public double BeatLen = 0;

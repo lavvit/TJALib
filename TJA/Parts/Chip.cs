@@ -8,6 +8,8 @@ public class Chip : ChipBase
     public double Scroll = 1;
     // Y方向のスクロール
     public double ImidiateScroll = 0;
+    public double Speed => Math.Sqrt(Scroll * Scroll + ImidiateScroll * ImidiateScroll);
+
     public ENote Type;
     public bool Gogo;
     public int SE = -1;
@@ -69,7 +71,7 @@ public class Chip : ChipBase
 
     public bool Hittable
         => Type is > ENote.None and not ENote.End;
-
+    public bool Displable => Hittable && !Hit && BPM * Scroll > -1000 && BPM * Scroll < 1000000;
     public bool NonThrought => Hittable && !Hit && !Miss;
 
     public double Dencity => Length > 0.0 ? 1000.0 / Length : 0;

@@ -309,7 +309,8 @@ public class Header
     }
 
     public string WavePath
-        => System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path) ?? "", Wave));
+        => !string.IsNullOrEmpty(Path) ?
+        System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path) ?? "", Wave)) : "";
 
     public override string ToString() => string.IsNullOrEmpty(Title) && Level == 0
             ? "No Entry"
