@@ -319,50 +319,42 @@ public class Header
     public bool NewSong => CreateTime > DateTime.Now.AddMonths(-1);
     public bool SemiNewSong => CreateTime > DateTime.Now.AddYears(-1);
 
-    public (Color front, Color back, Color edge) GetTitleColor()
+    public (Color front, Color back, Color edge) GetTitleColor(bool editchange = true)
     {
         string genre = SongGenre.GetName(
             [.. Genres, .. SongGenre.FromSubtitle(SubTitle).Select(g => SongGenre.Name(g))]);
-        var col = Color.Parse(SongGenre.Color(genre));
-        var hsb = col.ToHSB();
-        var edgecol = !string.IsNullOrEmpty(genre) ? Color.FromHSB(hsb.Hue, hsb.Saturation,
-            hsb.Brightness * Easing.Ease(hsb.Saturation, 1, 0.2, 0.5)) : Color.Black;
+        var genrecol = Color.Parse(SongGenre.Color(genre));
+        var edgecol = !string.IsNullOrEmpty(genre) ? genrecol.Shift(b:
+            Easing.Ease(genrecol.Saturation, 1, 0.2, 0.5)) : Color.Black;
 
         var front = Color.White;
-        if (Difficulty == ECourse.Edit || (ECourse)course == ECourse.Edit)
+        var back = genrecol;
+        var newcolor = NewSong ? Color.DeepPink : Color.DeepSkyBlue;
+        var newedge = Color.DodgerBlue;
+        bool isnew = NewSong || SemiNewSong;
+        if (editchange && (Difficulty == ECourse.Edit || (ECourse)course == ECourse.Edit))
         {
             var editcolor = Color.Parse("#7234d4");
-            var ehsb = editcolor.ToHSB();
-            double huediff = Math.Abs(hsb.Hue - ehsb.Hue) / 180.0;
-            edgecol = Color.FromHSB(ehsb.Hue, ehsb.Saturation, ehsb.Brightness * Easing.Ease(huediff, 1, 1.3, 1));
-            if (front.ToHSB().Saturation < 0.05)
-            {
-
-                if (hsb.Saturation < 0.05)
-                {
-                    col = Color.FromHSB(ehsb.Hue, ehsb.Saturation * 0.8, ehsb.Brightness);
-                }
-                else front = Color.FromHSB(ehsb.Hue - 16, ehsb.Saturation * Easing.Ease(huediff, 1, 0.2, 0.8), ehsb.Brightness * 1.25);
-            }
+            if (genre != "") front = genrecol;
+            //if (isnew) front = newcolor.Shift(s: 0.8, b: 2);
+            back = editcolor;
+            edgecol = editcolor.Shift(b: 0.6);
         }
-        //hsb = col.ToHSB();
-        else if (NewSong || SemiNewSong)
+        else if (isnew)
         {
-            var newcolor = NewSong ? Color.DeepPink : Color.DeepSkyBlue;
-            var nhsb = newcolor.ToHSB();
-            if (hsb.Saturation < 0.05)
+            if (genrecol.Saturation < 0.05)
             {
-                col = Color.FromHSB(nhsb.Hue, nhsb.Saturation, nhsb.Brightness + 0.3);
-                edgecol = Color.FromHSB(nhsb.Hue, nhsb.Saturation, nhsb.Brightness * 0.3);
-                front = Color.FromHSB(nhsb.Hue, nhsb.Saturation * 0.2, nhsb.Brightness);
+                back = newcolor;
+                edgecol = newcolor.Shift(b: 0.4);
+                front = newcolor.Shift(s: 0.3);
             }
             else
             {
-                front = Color.FromHSB(nhsb.Hue, nhsb.Saturation * 0.6, nhsb.Brightness);
+                front = newcolor.Shift(s: 0.6);
             }
         }
 
-        return (front, col, edgecol);
+        return (front, back, edgecol);
     }
 }
 

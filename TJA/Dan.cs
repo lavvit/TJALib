@@ -376,6 +376,9 @@ public class Exam
         }
     }
 
+    public bool InClear => isLess ? Value < RedNumber : Value >= RedNumber;
+    public bool InGold => InClear && (isLess ? Value < GoldNumber : Value >= GoldNumber);
+
     public Color Color => Success switch
     {
         ESuccess.Gold => Color.Gold,
